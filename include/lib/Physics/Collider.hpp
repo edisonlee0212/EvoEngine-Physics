@@ -25,7 +25,7 @@ class Collider : public IAsset
   public:
     void OnInspect(const std::shared_ptr<EditorLayer>& editorLayer) override;
     void OnCreate() override;
-    ~Collider();
+    ~Collider() override;
     void SetShapeType(const ShapeType& type);
     void SetShapeParam(const glm::vec3& param);
     void SetMaterial(const std::shared_ptr<PhysicsMaterial>& material);
