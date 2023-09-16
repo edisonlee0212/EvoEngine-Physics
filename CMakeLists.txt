@@ -90,7 +90,7 @@ if (BUILD_PHYSICS)
     target_compile_definitions(evoengine-physics
             PRIVATE
             NOMINMAX
-            HAS_PHYSICS
+            BUILD_PHYSICS
             )
 endif ()
 
