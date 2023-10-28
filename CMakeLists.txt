@@ -85,14 +85,28 @@ target_compile_definitions(evoengine-physics
 	)
 
 if (WIN32)
+	if (CMAKE_BUILD_TYPE MATCHES "^[Rr]elease")
+		file(GLOB PHYSX_LIBS "3rdParty/physx/win.x86_64.vc143.mt/release/*.lib")
+	else()
+		file(GLOB PHYSX_LIBS "3rdParty/physx/win.x86_64.vc143.mt/debug/*.lib")
+	endif ()
+	target_link_libraries(evoengine-physics
+			${PHYSX_LIBS}
+			)
 	# Compiler settings for Windows platform
 	set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 elseif (UNIX AND NOT APPLE)
-	if (${CMAKE_BUILD_TYPE} STREQUAL Release)
+	if (CMAKE_BUILD_TYPE MATCHES "^[Rr]elease")
+		file(GLOB PHYSX_LIBS "3rdParty/physx/linux.clang/release/*.a")
 		set(CMAKE_CXX_FLAGS_RELEASE "-O3")
-	elseif (${CMAKE_BUILD_TYPE} STREQUAL Debug)
+	elseif (CMAKE_BUILD_TYPE MATCHES "[Dd]ebug")
+		file(GLOB PHYSX_LIBS "3rdParty/physx/linux.clang/debug/*.a")
 		set(CMAKE_CXX_FLAGS_DEBUG "-g")
 	endif ()
+	target_link_libraries(evoengine
+		${PHYSX_LIBS}
+		)	
+
 elseif (APPLE)
 endif ()
 
@@ -105,3 +119,30 @@ if (NOT ${CMAKE_BINARY_DIR} STREQUAL ${PROJECT_BINARY_DIR})
 	set(EVOENGINE_PHYSICS_INCLUDES ${LOCAL_EVOENGINE_PHYSICS_INCLUDES} PARENT_SCOPE)
 	set(LOCAL_EVOENGINE_PHYSICS ${LOCAL_EVOENGINE_PHYSICS_PCH} PARENT_SCOPE)
 endif ()
+
+# ------------------------------------------------------------------
+# Copy DLLs
+# ------------------------------------------------------------------
+if (WIN32)
+    if (CMAKE_BUILD_TYPE MATCHES "^[Rr]elease")
+        file(GLOB PHYSX_DLLS "3rdParty/physx/win.x86_64.vc143.mt/release/*.dll")
+    elseif (CMAKE_BUILD_TYPE MATCHES "[Dd]ebug")
+        file(GLOB PHYSX_DLLS "3rdParty/physx/win.x86_64.vc143.mt/debug/*.dll")
+    endif ()
+elseif (UNIX AND NOT APPLE)
+    if (CMAKE_BUILD_TYPE MATCHES "^[Rr]elease")
+        file(GLOB PHYSX_DLLS "3rdParty/physx/linux.clang/release/*.so")
+    elseif (CMAKE_BUILD_TYPE MATCHES "[Dd]ebug")
+        file(GLOB PHYSX_DLLS "3rdParty/physx/linux.clang/debug/*.so")
+    endif ()
+endif ()
+
+foreach (PHYSX_DLL ${PHYSX_DLLS})
+    add_custom_command(
+            TARGET evoengine-physics
+            POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy
+            ${PHYSX_DLL}
+            ${CMAKE_BINARY_DIR}
+    )
+endforeach ()
