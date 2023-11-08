@@ -15,7 +15,6 @@ class RigidBody : public IPrivateComponent
     bool m_static = false;
     friend class PhysicsSystem;
     friend class PhysicsLayer;
-    friend class TransformLayer;
     PxRigidActor *m_rigidActor = nullptr;
 
     float m_density = 10.0f;
