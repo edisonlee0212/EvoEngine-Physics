@@ -94,7 +94,7 @@ void PhysicsLayer::OnCreate()
         true, m_physVisDebugger);
     PxInitExtensions(*m_physics, m_physVisDebugger);
 #endif // NDEBUG
-    m_dispatcher = PxDefaultCpuDispatcherCreate(Jobs::Workers().Size());
+    m_dispatcher = PxDefaultCpuDispatcherCreate(8);
 
     #pragma region Physics
     m_defaultPhysicsMaterial =
@@ -417,67 +417,30 @@ void PhysicsLayer::UploadJointLinks(
 
 void PhysicsSystem::DownloadRigidBodyTransforms(const std::vector<Entity> *rigidBodyEntities) const
 {
-    std::vector<std::shared_future<void>> futures;
-    auto &list = rigidBodyEntities;
-    auto threadSize = Jobs::Workers().Size();
-    size_t capacity = rigidBodyEntities->size() / threadSize;
-    size_t reminder = rigidBodyEntities->size() % threadSize;
-    auto scene = GetScene();
-    for (size_t i = 0; i < threadSize; i++)
-    {
-        futures.push_back(Jobs::Workers()
-                              .Push([&list, i, capacity, reminder, threadSize, &scene](int id) {
-                                  for (size_t j = 0; j < capacity; j++)
-                                  {
-                                      size_t index = capacity * i + j;
-                                      auto rigidBodyEntity = list->at(index);
-                                      auto rigidBody = scene->GetOrSetPrivateComponent<RigidBody>(rigidBodyEntity).lock();
-                                      if (rigidBody->m_currentRegistered && !rigidBody->m_kinematic)
-                                      {
-                                          PxTransform transform = rigidBody->m_rigidActor->getGlobalPose();
-                                          glm::vec3 position = *(glm::vec3 *)(void *)&transform.p;
-                                          glm::quat rotation = *(glm::quat *)(void *)&transform.q;
-                                          glm::vec3 scale =
-                                              scene->GetDataComponent<GlobalTransform>(rigidBodyEntity).GetScale();
-                                          GlobalTransform globalTransform;
-                                          globalTransform.SetValue(position, rotation, scale);
-                                          scene->SetDataComponent(rigidBodyEntity, globalTransform);
-                                          if (!rigidBody->m_static)
-                                          {
-                                              PxRigidBody *rb = static_cast<PxRigidBody *>(rigidBody->m_rigidActor);
-                                              rigidBody->m_linearVelocity = rb->getLinearVelocity();
-                                              rigidBody->m_angularVelocity = rb->getAngularVelocity();
-                                          }
-                                      }
-                                  }
-                                  if (reminder > i)
-                                  {
-                                      size_t index = capacity * threadSize + i;
-                                      auto rigidBodyEntity = list->at(index);
-                                      auto rigidBody = scene->GetOrSetPrivateComponent<RigidBody>(rigidBodyEntity).lock();
-                                      if (rigidBody->m_currentRegistered && !rigidBody->m_kinematic)
-                                      {
-                                          PxTransform transform = rigidBody->m_rigidActor->getGlobalPose();
-                                          glm::vec3 position = *(glm::vec3 *)(void *)&transform.p;
-                                          glm::quat rotation = *(glm::quat *)(void *)&transform.q;
-                                          glm::vec3 scale =
-                                              scene->GetDataComponent<GlobalTransform>(rigidBodyEntity).GetScale();
-                                          GlobalTransform globalTransform;
-                                          globalTransform.SetValue(position, rotation, scale);
-                                          scene->SetDataComponent(rigidBodyEntity, globalTransform);
-                                          if (!rigidBody->m_static)
-                                          {
-                                              PxRigidBody *rb = static_cast<PxRigidBody *>(rigidBody->m_rigidActor);
-                                              rigidBody->m_linearVelocity = rb->getLinearVelocity();
-                                              rigidBody->m_angularVelocity = rb->getAngularVelocity();
-                                          }
-                                      }
-                                  }
-                              })
-                              .share());
-    }
-    for (const auto &i : futures)
-        i.wait();
+    const auto scene = GetScene();
+    auto& list = rigidBodyEntities;
+    Jobs::ParallelFor(rigidBodyEntities->size(), [&](unsigned index) {
+        auto rigidBodyEntity = list->at(index);
+        auto rigidBody = scene->GetOrSetPrivateComponent<RigidBody>(rigidBodyEntity).lock();
+        if (rigidBody->m_currentRegistered && !rigidBody->m_kinematic)
+        {
+            PxTransform transform = rigidBody->m_rigidActor->getGlobalPose();
+            glm::vec3 position = *(glm::vec3*)(void*)&transform.p;
+            glm::quat rotation = *(glm::quat*)(void*)&transform.q;
+            glm::vec3 scale =
+                scene->GetDataComponent<GlobalTransform>(rigidBodyEntity).GetScale();
+            GlobalTransform globalTransform;
+            globalTransform.SetValue(position, rotation, scale);
+            scene->SetDataComponent(rigidBodyEntity, globalTransform);
+            if (!rigidBody->m_static)
+            {
+                PxRigidBody* rb = static_cast<PxRigidBody*>(rigidBody->m_rigidActor);
+                rigidBody->m_linearVelocity = rb->getLinearVelocity();
+                rigidBody->m_angularVelocity = rb->getAngularVelocity();
+            }
+        }
+        }
+    );
 }
 
 PhysicsScene::PhysicsScene()
