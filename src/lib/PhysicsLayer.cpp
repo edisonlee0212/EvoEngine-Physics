@@ -419,7 +419,7 @@ void PhysicsSystem::DownloadRigidBodyTransforms(const std::vector<Entity> *rigid
 {
     const auto scene = GetScene();
     auto& list = rigidBodyEntities;
-    Jobs::ParallelFor(rigidBodyEntities->size(), [&](unsigned index) {
+    Jobs::RunParallelFor(rigidBodyEntities->size(), [&](unsigned index) {
         auto rigidBodyEntity = list->at(index);
         auto rigidBody = scene->GetOrSetPrivateComponent<RigidBody>(rigidBodyEntity).lock();
         if (rigidBody->m_currentRegistered && !rigidBody->m_kinematic)
