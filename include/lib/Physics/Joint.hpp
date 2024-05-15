@@ -107,13 +107,13 @@ class Joint : public IPrivateComponent
     void OnCreate() override;
 
     void Link(const Entity& entity, bool reverse = false);
-    void OnInspect(const std::shared_ptr<EditorLayer>& editorLayer) override;
+    bool OnInspect(const std::shared_ptr<EditorLayer>& editorLayer) override;
     void OnDestroy() override;
 
     void Relink(const std::unordered_map<Handle, Handle> &map, const std::shared_ptr<Scene> &scene) override;
     void PostCloneAction(const std::shared_ptr<IPrivateComponent>& target) override;
 
-    void Serialize(YAML::Emitter &out) override;
+    void Serialize(YAML::Emitter &out) const override;
     void Deserialize(const YAML::Node &in) override;
 };
 } // namespace EvoEngine

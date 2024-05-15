@@ -50,13 +50,13 @@ class RigidBody : public IPrivateComponent
     void OnDestroy() override;
     void RecreateBody();
     void OnCreate() override;
-    void OnInspect(const std::shared_ptr<EditorLayer>& editorLayer) override;
+    bool OnInspect(const std::shared_ptr<EditorLayer>& editorLayer) override;
 
     void AddForce(const glm::vec3& force);
     void AddTorque(const glm::vec3& torque);
 
 
-    void Serialize(YAML::Emitter &out) override;
+    void Serialize(YAML::Emitter &out) const override;
     void Deserialize(const YAML::Node &in) override;
     void CollectAssetRef(std::vector<AssetRef> &list) override;
     void PostCloneAction(const std::shared_ptr<IPrivateComponent> &target) override;

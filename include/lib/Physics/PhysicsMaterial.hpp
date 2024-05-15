@@ -22,7 +22,7 @@ class PhysicsMaterial : public IAsset
     void OnGui();
     ~PhysicsMaterial();
 
-    void Serialize(YAML::Emitter &out) override;
+    void Serialize(YAML::Emitter &out) const override;
     void Deserialize(const YAML::Node &in) override;
 };
 } // namespace EvoEngine

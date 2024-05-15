@@ -23,14 +23,14 @@ class Collider : public IAsset
     size_t m_attachCount = 0;
 
   public:
-    void OnInspect(const std::shared_ptr<EditorLayer>& editorLayer) override;
+    bool OnInspect(const std::shared_ptr<EditorLayer>& editorLayer) override;
     void OnCreate() override;
     ~Collider() override;
     void SetShapeType(const ShapeType& type);
     void SetShapeParam(const glm::vec3& param);
     void SetMaterial(const std::shared_ptr<PhysicsMaterial>& material);
     void CollectAssetRef(std::vector<AssetRef> &list) override;
-    void Serialize(YAML::Emitter &out) override;
+    void Serialize(YAML::Emitter &out) const override;
     void Deserialize(const YAML::Node &in) override;
 };
 } // namespace EvoEngine

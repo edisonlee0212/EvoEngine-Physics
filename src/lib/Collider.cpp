@@ -6,7 +6,7 @@ using namespace EvoEngine;
 
 static const char* RigidBodyShape[]{ "Sphere", "Box", "Capsule" };
 
-void Collider::OnInspect(const std::shared_ptr<EditorLayer>& editorLayer)
+bool Collider::OnInspect(const std::shared_ptr<EditorLayer>& editorLayer)
 {
 	bool statusChanged = false;
 	if (ImGui::Combo(
@@ -42,6 +42,7 @@ void Collider::OnInspect(const std::shared_ptr<EditorLayer>& editorLayer)
 	if (statusChanged) {
 		SetShapeParam(newParam);
 	}
+	return statusChanged;
 }
 
 void Collider::OnCreate()
@@ -116,7 +117,7 @@ void Collider::CollectAssetRef(std::vector<AssetRef>& list)
 {
 	list.push_back(m_physicsMaterial);
 }
-void Collider::Serialize(YAML::Emitter& out)
+void Collider::Serialize(YAML::Emitter& out) const
 {
 	m_physicsMaterial.Save("m_physicsMaterial", out);
 	out << YAML::Key << "m_shapeParam" << YAML::Value << m_shapeParam;

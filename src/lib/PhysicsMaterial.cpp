@@ -45,7 +45,7 @@ void EvoEngine::PhysicsMaterial::OnGui()
         SetRestitution(m_restitution);
     }
 }
-void EvoEngine::PhysicsMaterial::Serialize(YAML::Emitter &out)
+void EvoEngine::PhysicsMaterial::Serialize(YAML::Emitter &out) const
 {
     out << YAML::Key << "m_staticFriction" << YAML::Value << m_staticFriction;
     out << YAML::Key << "m_dynamicFriction" << YAML::Value << m_dynamicFriction;
