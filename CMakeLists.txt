@@ -13,18 +13,15 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 # Build types
 # ------------------------------------------------------------------
 # Set a default build type if none was specified
-set(default_build_type "Release")
+set(default_build_type "RelWithDebInfo")
 
 if (NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
 	message(STATUS "Setting build type to '${default_build_type}' as none was specified.")
 	set(CMAKE_BUILD_TYPE "${default_build_type}" CACHE
-		STRING "Choose the type of build." FORCE)
-	# Set the possible values of build type for cmake-gui
-	set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS
-		"Debug" "Release")
+			STRING "Choose the type of build." FORCE)
 endif ()
 
-if (CMAKE_BUILD_TYPE MATCHES "^[Rr]elease")
+if (CMAKE_BUILD_TYPE MATCHES "^[Rr]elease" OR CMAKE_BUILD_TYPE MATCHES "^[Rr]lWithDebInfo")
 	set(DEBUG_STATUS NDEBUG)
 elseif (CMAKE_BUILD_TYPE MATCHES "[Dd]ebug")
 	set(DEBUG_STATUS _DEBUG)
@@ -82,10 +79,11 @@ target_link_libraries(evoengine-physics
 target_compile_definitions(evoengine-physics
 	PRIVATE
 	NOMINMAX
+	${PHYSX_COMPILE_OPTION}
 	)
 
 if (WIN32)
-	if (CMAKE_BUILD_TYPE MATCHES "^[Rr]elease")
+	if (CMAKE_BUILD_TYPE MATCHES "^[Rr]elease" OR CMAKE_BUILD_TYPE MATCHES "^[Rr]elWithDebInfo")
 		file(GLOB PHYSX_LIBS "3rdParty/physx/win.x86_64.vc143.mt/release/*.lib")
 	else()
 		file(GLOB PHYSX_LIBS "3rdParty/physx/win.x86_64.vc143.mt/debug/*.lib")
