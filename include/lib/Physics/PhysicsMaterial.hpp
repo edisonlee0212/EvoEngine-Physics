@@ -3,16 +3,16 @@
 #include "IAsset.hpp"
 #include <PxPhysicsAPI.h>
 using namespace physx;
-namespace EvoEngine
+namespace evo_engine
 {
 class PhysicsMaterial : public IAsset
 {
     friend class PhysicsLayer;
     friend class Collider;
-    PxMaterial *m_value;
-    float m_staticFriction = 0.02f;
-    float m_dynamicFriction = 0.02f;
-    float m_restitution = 0.8f;
+    PxMaterial *value_;
+    float static_friction_ = 0.02f;
+    float dynamic_friction_ = 0.02f;
+    float restitution_ = 0.8f;
 
   public:
     void SetDynamicFriction(const float &value);
@@ -25,4 +25,4 @@ class PhysicsMaterial : public IAsset
     void Serialize(YAML::Emitter &out) const override;
     void Deserialize(const YAML::Node &in) override;
 };
-} // namespace EvoEngine
+} // namespace evo_engine

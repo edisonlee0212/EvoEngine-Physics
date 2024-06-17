@@ -3,7 +3,7 @@
 #include "IAsset.hpp"
 #include <PhysicsMaterial.hpp>
 
-namespace EvoEngine
+namespace evo_engine
 {
 enum class ShapeType
 {
@@ -15,15 +15,15 @@ class Collider : public IAsset
 {
     friend class PhysicsLayer;
     friend class RigidBody;
-    PxShape *m_shape = nullptr;
-    glm::vec3 m_shapeParam = glm::vec3(1.0f);
-    ShapeType m_shapeType = ShapeType::Box;
-    AssetRef m_physicsMaterial;
+    PxShape *shape_ = nullptr;
+    glm::vec3 shape_param_ = glm::vec3(1.0f);
+    ShapeType shape_type_ = ShapeType::Box;
+    AssetRef physics_material_;
 
-    size_t m_attachCount = 0;
+    size_t attach_count_ = 0;
 
   public:
-    bool OnInspect(const std::shared_ptr<EditorLayer>& editorLayer) override;
+    bool OnInspect(const std::shared_ptr<EditorLayer>& editor_layer) override;
     void OnCreate() override;
     ~Collider() override;
     void SetShapeType(const ShapeType& type);
@@ -33,4 +33,4 @@ class Collider : public IAsset
     void Serialize(YAML::Emitter &out) const override;
     void Deserialize(const YAML::Node &in) override;
 };
-} // namespace EvoEngine
+} // namespace evo_engine

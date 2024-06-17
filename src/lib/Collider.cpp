@@ -1,142 +1,131 @@
 #include "Collider.hpp"
-#include "PhysicsLayer.hpp"
 #include "Application.hpp"
 #include "ClassRegistry.hpp"
-using namespace EvoEngine;
+#include "PhysicsLayer.hpp"
+using namespace evo_engine;
 
-static const char* RigidBodyShape[]{ "Sphere", "Box", "Capsule" };
+const char* rigid_body_shape[]{"Sphere", "Box", "Capsule"};
 
-bool Collider::OnInspect(const std::shared_ptr<EditorLayer>& editorLayer)
-{
-	bool statusChanged = false;
-	if (ImGui::Combo(
-		"Shape", reinterpret_cast<int*>(&m_shapeType), RigidBodyShape, IM_ARRAYSIZE(RigidBodyShape))) {
-		statusChanged = true;
-	}
-	editorLayer->DragAndDropButton<PhysicsMaterial>(m_physicsMaterial, "Physics Mat");
-	auto mat = m_physicsMaterial.Get<PhysicsMaterial>();
-	if (mat)
-	{
-		if (ImGui::TreeNode("Material"))
-		{
-			mat->OnGui();
-			ImGui::TreePop();
-		}
-	}
-	glm::vec3 newParam = m_shapeParam;
-	switch (m_shapeType)
-	{
-	case ShapeType::Sphere:
-		if (ImGui::DragFloat("Radius", &newParam.x, 0.01f, 0.0001f))
-			statusChanged = true;
-		break;
-	case ShapeType::Box:
-		if (ImGui::DragFloat3("XYZ Size", &newParam.x, 0.01f, 0.0f))
-			statusChanged = true;
-		break;
-	case ShapeType::Capsule:
-		if (ImGui::DragFloat2("R/HalfH", &newParam.x, 0.01f, 0.0001f))
-			statusChanged = true;
-		break;
-	}
-	if (statusChanged) {
-		SetShapeParam(newParam);
-	}
-	return statusChanged;
+bool Collider::OnInspect(const std::shared_ptr<EditorLayer>& editor_layer) {
+  bool status_changed = false;
+  if (ImGui::Combo("Shape", reinterpret_cast<int*>(&shape_type_), rigid_body_shape, IM_ARRAYSIZE(rigid_body_shape))) {
+    status_changed = true;
+  }
+  editor_layer->DragAndDropButton<PhysicsMaterial>(physics_material_, "Physics Mat");
+  if (const auto physics_material = physics_material_.Get<PhysicsMaterial>()) {
+    if (ImGui::TreeNode("Material")) {
+      physics_material->OnGui();
+      ImGui::TreePop();
+    }
+  }
+  glm::vec3 new_param = shape_param_;
+  switch (shape_type_) {
+    case ShapeType::Sphere:
+      if (ImGui::DragFloat("Radius", &new_param.x, 0.01f, 0.0001f))
+        status_changed = true;
+      break;
+    case ShapeType::Box:
+      if (ImGui::DragFloat3("XYZ Size", &new_param.x, 0.01f, 0.0f))
+        status_changed = true;
+      break;
+    case ShapeType::Capsule:
+      if (ImGui::DragFloat2("R/HalfH", &new_param.x, 0.01f, 0.0001f))
+        status_changed = true;
+      break;
+  }
+  if (status_changed) {
+    SetShapeParam(new_param);
+  }
+  return status_changed;
 }
 
-void Collider::OnCreate()
-{
-	auto physicsLayer = Application::GetLayer<PhysicsLayer>();
-	if (!physicsLayer) return;
-	if (!m_physicsMaterial.Get<PhysicsMaterial>()) m_physicsMaterial = physicsLayer->m_defaultPhysicsMaterial;
-	m_shape = physicsLayer->m_physics->createShape(
-		PxBoxGeometry(m_shapeParam.x, m_shapeParam.y, m_shapeParam.z),
-		*m_physicsMaterial.Get<PhysicsMaterial>()->m_value);
+void Collider::OnCreate() {
+  const auto physics_layer = Application::GetLayer<PhysicsLayer>();
+  if (!physics_layer)
+    return;
+  if (!physics_material_.Get<PhysicsMaterial>())
+    physics_material_ = physics_layer->default_physics_material;
+  shape_ = physics_layer->physics_->createShape(PxBoxGeometry(shape_param_.x, shape_param_.y, shape_param_.z),
+                                                *physics_material_.Get<PhysicsMaterial>()->value_);
 }
 
-Collider::~Collider()
-{
-	if (m_shape != nullptr)
-	{
-		m_shape->release();
-	}
+Collider::~Collider() {
+  if (shape_ != nullptr) {
+    shape_->release();
+  }
 }
-void Collider::SetShapeType(const ShapeType& type)
-{
-	auto physicsLayer = Application::GetLayer<PhysicsLayer>();
-	if (!physicsLayer) return;
-	if (m_attachCount != 0) {
-		EVOENGINE_ERROR("Unable to modify collider, attached to rigidbody!");
-	}
-	m_shapeType = type;
-	switch (m_shapeType)
-	{
-	case ShapeType::Sphere:
-		m_shape = physicsLayer->m_physics->createShape(PxSphereGeometry(m_shapeParam.x), *m_physicsMaterial.Get<PhysicsMaterial>()->m_value, false);
-		break;
-	case ShapeType::Box:
-		m_shape = physicsLayer->m_physics->createShape(PxBoxGeometry(m_shapeParam.x, m_shapeParam.y, m_shapeParam.z), *m_physicsMaterial.Get<PhysicsMaterial>()->m_value, false);
-		break;
-	case ShapeType::Capsule:
-		m_shape = physicsLayer->m_physics->createShape(PxCapsuleGeometry(m_shapeParam.x, m_shapeParam.y), *m_physicsMaterial.Get<PhysicsMaterial>()->m_value, false);
-		break;
-	}
+void Collider::SetShapeType(const ShapeType& type) {
+  const auto physics_layer = Application::GetLayer<PhysicsLayer>();
+  if (!physics_layer)
+    return;
+  if (attach_count_ != 0) {
+    EVOENGINE_ERROR("Unable to modify collider, attached to rigidbody!");
+  }
+  shape_type_ = type;
+  switch (shape_type_) {
+    case ShapeType::Sphere:
+      shape_ = physics_layer->physics_->createShape(PxSphereGeometry(shape_param_.x),
+                                                    *physics_material_.Get<PhysicsMaterial>()->value_, false);
+      break;
+    case ShapeType::Box:
+      shape_ = physics_layer->physics_->createShape(PxBoxGeometry(shape_param_.x, shape_param_.y, shape_param_.z),
+                                                    *physics_material_.Get<PhysicsMaterial>()->value_, false);
+      break;
+    case ShapeType::Capsule:
+      shape_ = physics_layer->physics_->createShape(PxCapsuleGeometry(shape_param_.x, shape_param_.y),
+                                                    *physics_material_.Get<PhysicsMaterial>()->value_, false);
+      break;
+  }
 }
-void Collider::SetMaterial(const std::shared_ptr<PhysicsMaterial>& material)
-{
-	if (m_attachCount != 0) {
-		EVOENGINE_ERROR("Unable to modify collider, attached to rigidbody!");
-	}
-	m_physicsMaterial = material;
-	PxMaterial* materials[1];
-	materials[0] = material->m_value;
-	m_shape->setMaterials(materials, 1);
+void Collider::SetMaterial(const std::shared_ptr<PhysicsMaterial>& material) {
+  if (attach_count_ != 0) {
+    EVOENGINE_ERROR("Unable to modify collider, attached to rigidbody!");
+  }
+  physics_material_ = material;
+  PxMaterial* materials[1];
+  materials[0] = material->value_;
+  shape_->setMaterials(materials, 1);
 }
-void Collider::SetShapeParam(const glm::vec3& param)
-{
-	if (m_attachCount != 0) {
-		EVOENGINE_ERROR("Unable to modify collider, attached to rigidbody!");
-	}
-	m_shapeParam = param;
-	m_shapeParam = glm::max(glm::vec3(0.001f), m_shapeParam);
-	switch (m_shapeType)
-	{
-	case ShapeType::Sphere:
-		m_shape->setGeometry(PxSphereGeometry(m_shapeParam.x));
-		break;
-	case ShapeType::Box:
-		m_shape->setGeometry(PxBoxGeometry(m_shapeParam.x, m_shapeParam.y, m_shapeParam.z));
-		break;
-	case ShapeType::Capsule:
-		m_shape->setGeometry(PxCapsuleGeometry(m_shapeParam.x, m_shapeParam.y));
-		break;
-	}
+void Collider::SetShapeParam(const glm::vec3& param) {
+  if (attach_count_ != 0) {
+    EVOENGINE_ERROR("Unable to modify collider, attached to rigidbody!");
+  }
+  shape_param_ = param;
+  shape_param_ = glm::max(glm::vec3(0.001f), shape_param_);
+  switch (shape_type_) {
+    case ShapeType::Sphere:
+      shape_->setGeometry(PxSphereGeometry(shape_param_.x));
+      break;
+    case ShapeType::Box:
+      shape_->setGeometry(PxBoxGeometry(shape_param_.x, shape_param_.y, shape_param_.z));
+      break;
+    case ShapeType::Capsule:
+      shape_->setGeometry(PxCapsuleGeometry(shape_param_.x, shape_param_.y));
+      break;
+  }
 }
-void Collider::CollectAssetRef(std::vector<AssetRef>& list)
-{
-	list.push_back(m_physicsMaterial);
+void Collider::CollectAssetRef(std::vector<AssetRef>& list) {
+  list.push_back(physics_material_);
 }
-void Collider::Serialize(YAML::Emitter& out) const
-{
-	m_physicsMaterial.Save("m_physicsMaterial", out);
-	out << YAML::Key << "m_shapeParam" << YAML::Value << m_shapeParam;
-	out << YAML::Key << "m_attachCount" << YAML::Value << m_attachCount;
-	out << YAML::Key << "m_shapeType" << YAML::Value << (unsigned)m_shapeType;
+void Collider::Serialize(YAML::Emitter& out) const {
+  physics_material_.Save("physics_material_", out);
+  out << YAML::Key << "shape_param_" << YAML::Value << shape_param_;
+  out << YAML::Key << "attach_count_" << YAML::Value << attach_count_;
+  out << YAML::Key << "shape_type_" << YAML::Value << static_cast<unsigned>(shape_type_);
 }
-void Collider::Deserialize(const YAML::Node& in)
-{
-	m_physicsMaterial.Load("m_physicsMaterial", in);
-	m_shapeParam = in["m_shapeParam"].as<glm::vec3>();
-	m_shapeType = (ShapeType)in["m_shapeType"].as<unsigned>();
-	SetShapeType(m_shapeType);
-	SetShapeParam(m_shapeParam);
-	auto mat = m_physicsMaterial.Get<PhysicsMaterial>();
-	if (!mat) {
-		auto physicsLayer = Application::GetLayer<PhysicsLayer>();
-		if (!physicsLayer) return;
-		mat = physicsLayer->m_defaultPhysicsMaterial;
-	}
-	SetMaterial(mat);
-	m_attachCount = in["m_attachCount"].as<size_t>();
+void Collider::Deserialize(const YAML::Node& in) {
+  physics_material_.Load("physics_material_", in);
+  shape_param_ = in["shape_param_"].as<glm::vec3>();
+  shape_type_ = static_cast<ShapeType>(in["shape_type_"].as<unsigned>());
+  SetShapeType(shape_type_);
+  SetShapeParam(shape_param_);
+  auto mat = physics_material_.Get<PhysicsMaterial>();
+  if (!mat) {
+    const auto physics_layer = Application::GetLayer<PhysicsLayer>();
+    if (!physics_layer)
+      return;
+    mat = physics_layer->default_physics_material;
+  }
+  SetMaterial(mat);
+  attach_count_ = in["attach_count_"].as<size_t>();
 }

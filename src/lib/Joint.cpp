@@ -2,97 +2,96 @@
 #include "EditorLayer.hpp"
 #include "RigidBody.hpp"
 #include "Scene.hpp"
-using namespace EvoEngine;
+using namespace evo_engine;
 #pragma region Fixed
-void Joint::FixedGui()
-{
+void Joint::FixedGui() {
 }
 #pragma endregion
 /*
 #pragma region Distance
 void Joint::DistanceGui()
 {
-	if (ImGui::DragFloat("Min", &m_minDistance, 0.1f, FLT_MIN, m_maxDistance))
-	{
-		SetMin(m_minDistance, m_minDistanceEnabled);
-	}
-	ImGui::SameLine();
-	if (ImGui::Checkbox("Enabled", &m_minDistanceEnabled))
-	{
-		SetMin(m_minDistance, m_minDistanceEnabled);
-	}
-	if (ImGui::DragFloat("Max", &m_maxDistance, 0.1f, m_minDistance, FLT_MAX))
-	{
-		SetMax(m_maxDistance, m_maxDistanceEnabled);
-	}
-	ImGui::SameLine();
-	if (ImGui::Checkbox("Enabled", &m_maxDistanceEnabled))
-	{
-		SetMax(m_maxDistance, m_maxDistanceEnabled);
-	}
+        if (ImGui::DragFloat("Min", &m_minDistance, 0.1f, FLT_MIN, m_maxDistance))
+        {
+                SetMin(m_minDistance, m_minDistanceEnabled);
+        }
+        ImGui::SameLine();
+        if (ImGui::Checkbox("Enabled", &m_minDistanceEnabled))
+        {
+                SetMin(m_minDistance, m_minDistanceEnabled);
+        }
+        if (ImGui::DragFloat("Max", &m_maxDistance, 0.1f, m_minDistance, FLT_MAX))
+        {
+                SetMax(m_maxDistance, m_maxDistanceEnabled);
+        }
+        ImGui::SameLine();
+        if (ImGui::Checkbox("Enabled", &m_maxDistanceEnabled))
+        {
+                SetMax(m_maxDistance, m_maxDistanceEnabled);
+        }
 
-	if (ImGui::DragFloat("Stiffness", &m_stiffness))
-	{
-		SetStiffness(m_stiffness);
-	}
-	if (ImGui::DragFloat("Damping", &m_damping))
-	{
-		SetDamping(m_damping);
-	}
+        if (ImGui::DragFloat("Stiffness", &m_stiffness))
+        {
+                SetStiffness(m_stiffness);
+        }
+        if (ImGui::DragFloat("Damping", &m_damping))
+        {
+                SetDamping(m_damping);
+        }
 }
 void Joint::SetMax(float value, const bool &enabled)
 {
-	if (!m_joint)
-		return;
-	if (!TypeCheck(JointType::Distance))
-		return;
-	if (m_maxDistance != value || m_maxDistanceEnabled != enabled)
-	{
-		m_maxDistance = value;
-		m_maxDistanceEnabled = enabled;
-		static_cast<PxDistanceJoint *>(m_joint)->setDistanceJointFlag(
-			PxDistanceJointFlag::eMAX_DISTANCE_ENABLED, m_maxDistanceEnabled);
-		static_cast<PxDistanceJoint *>(m_joint)->setMaxDistance(m_maxDistance);
-	}
+        if (!joint_)
+                return;
+        if (!TypeCheck(JointType::Distance))
+                return;
+        if (m_maxDistance != value || m_maxDistanceEnabled != enabled)
+        {
+                m_maxDistance = value;
+                m_maxDistanceEnabled = enabled;
+                static_cast<PxDistanceJoint *>(joint_)->setDistanceJointFlag(
+                        PxDistanceJointFlag::eMAX_DISTANCE_ENABLED, m_maxDistanceEnabled);
+                static_cast<PxDistanceJoint *>(joint_)->setMaxDistance(m_maxDistance);
+        }
 }
 void Joint::SetMin(float value, const bool &enabled)
 {
-	if (!m_joint)
-		return;
-	if (!TypeCheck(JointType::Distance))
-		return;
-	if (m_minDistance != value || m_maxDistanceEnabled != enabled)
-	{
-		m_minDistance = value;
-		m_minDistanceEnabled = enabled;
-		static_cast<PxDistanceJoint *>(m_joint)->setDistanceJointFlag(
-			PxDistanceJointFlag::eMIN_DISTANCE_ENABLED, m_minDistanceEnabled);
-		static_cast<PxDistanceJoint *>(m_joint)->setMinDistance(m_minDistance);
-	}
+        if (!joint_)
+                return;
+        if (!TypeCheck(JointType::Distance))
+                return;
+        if (m_minDistance != value || m_maxDistanceEnabled != enabled)
+        {
+                m_minDistance = value;
+                m_minDistanceEnabled = enabled;
+                static_cast<PxDistanceJoint *>(joint_)->setDistanceJointFlag(
+                        PxDistanceJointFlag::eMIN_DISTANCE_ENABLED, m_minDistanceEnabled);
+                static_cast<PxDistanceJoint *>(joint_)->setMinDistance(m_minDistance);
+        }
 }
 void Joint::SetStiffness(float value)
 {
-	if (!m_joint)
-		return;
-	if (!TypeCheck(JointType::Distance))
-		return;
-	if (m_stiffness != value)
-	{
-		m_stiffness = value;
-		static_cast<PxDistanceJoint *>(m_joint)->setStiffness(m_stiffness);
-	}
+        if (!joint_)
+                return;
+        if (!TypeCheck(JointType::Distance))
+                return;
+        if (m_stiffness != value)
+        {
+                m_stiffness = value;
+                static_cast<PxDistanceJoint *>(joint_)->setStiffness(m_stiffness);
+        }
 }
 void Joint::SetDamping(float value)
 {
-	if (!m_joint)
-		return;
-	if (!TypeCheck(JointType::Distance))
-		return;
-	if (m_damping != value)
-	{
-		m_damping = value;
-		static_cast<PxDistanceJoint *>(m_joint)->setDamping(m_damping);
-	}
+        if (!joint_)
+                return;
+        if (!TypeCheck(JointType::Distance))
+                return;
+        if (m_damping != value)
+        {
+                m_damping = value;
+                static_cast<PxDistanceJoint *>(joint_)->setDamping(m_damping);
+        }
 }
 
 #pragma endregion
@@ -114,265 +113,234 @@ void Joint::PrismaticGui()
  */
 #pragma region D6
 
-void Joint::D6Gui()
-{
-	auto* joint = static_cast<PxD6Joint*>(m_joint);
+void Joint::D6Gui() {
+  auto* joint = static_cast<PxD6Joint*>(joint_);
 }
 #pragma endregion
-void Joint::Unlink()
-{
-	if (!m_linked) return;
-	if (m_joint)
-	{
-		m_joint->release();
-		m_joint = nullptr;
-	}
-	m_linked = false;
+void Joint::Unlink() {
+  if (!linked_)
+    return;
+  if (joint_) {
+    joint_->release();
+    joint_ = nullptr;
+  }
+  linked_ = false;
 }
-bool Joint::Linked()
-{
-	return m_linked;
+bool Joint::Linked() {
+  return linked_;
 }
 
-void Joint::OnCreate()
-{
-}
-static const char* JointTypeNames[]{ "Fixed", "D6" };
-bool Joint::OnInspect(const std::shared_ptr<EditorLayer>& editorLayer)
-{
-	bool changed = false;
-	static int type = 0;
-	type = (int)m_jointType;
-	if (ImGui::Combo("Joint Type", &type, JointTypeNames, IM_ARRAYSIZE(JointTypeNames)))
-	{
-		SetType((JointType)type);
-		changed = true;
-	}
-	auto storedRigidBody1 = m_rigidBody1.Get<RigidBody>();
-	auto storedRigidBody2 = m_rigidBody2.Get<RigidBody>();
-	if (editorLayer->DragAndDropButton<RigidBody>(m_rigidBody1, "Link 1")) changed = true;
-	if (editorLayer->DragAndDropButton<RigidBody>(m_rigidBody2, "Link 2")) changed = true;
-	if (m_rigidBody1.Get<RigidBody>() != storedRigidBody1 || m_rigidBody2.Get<RigidBody>() != storedRigidBody2)
-	{
-		Unlink();
-	}
-	if (m_joint)
-	{
-		switch (m_jointType)
-		{
-		case JointType::Fixed:
-			FixedGui();
-			break;
-			/*
-		case JointType::Distance:
-			DistanceGui();
-			break;
-		case JointType::Spherical:
-			SphericalGui();
-			break;
-		case JointType::Revolute:
-			RevoluteGui();
-			break;
-		case JointType::Prismatic:
-			PrismaticGui();
-			break;
-			 */
-		case JointType::D6:
-			D6Gui();
-			break;
-		}
-	}
-	return changed;
+void Joint::OnCreate() {
 }
 
-void Joint::OnDestroy()
-{
-	Unlink();
-	m_rigidBody1.Clear();
-	m_rigidBody2.Clear();
+bool Joint::OnInspect(const std::shared_ptr<EditorLayer>& editor_layer) {
+  bool changed = false;
+  static int type = 0;
+  type = (int)joint_type_;
+  const char* joint_type_names[]{"Fixed", "D6"};
+  if (ImGui::Combo("Joint Type", &type, joint_type_names, IM_ARRAYSIZE(joint_type_names))) {
+    SetType((JointType)type);
+    changed = true;
+  }
+  const auto stored_rigid_body1 = rigid_body1.Get<RigidBody>();
+  const auto stored_rigid_body2 = rigid_body2.Get<RigidBody>();
+  if (editor_layer->DragAndDropButton<RigidBody>(rigid_body1, "Link 1"))
+    changed = true;
+  if (editor_layer->DragAndDropButton<RigidBody>(rigid_body2, "Link 2"))
+    changed = true;
+  if (rigid_body1.Get<RigidBody>() != stored_rigid_body1 || rigid_body2.Get<RigidBody>() != stored_rigid_body2) {
+    Unlink();
+  }
+  if (joint_) {
+    switch (joint_type_) {
+      case JointType::Fixed:
+        FixedGui();
+        break;
+        /*
+case JointType::Distance:
+        DistanceGui();
+        break;
+case JointType::Spherical:
+        SphericalGui();
+        break;
+case JointType::Revolute:
+        RevoluteGui();
+        break;
+case JointType::Prismatic:
+        PrismaticGui();
+        break;
+         */
+      case JointType::D6:
+        D6Gui();
+        break;
+    }
+  }
+  return changed;
 }
 
-
-bool Joint::TypeCheck(const JointType& type)
-{
-	if (m_jointType != type)
-	{
-		EVOENGINE_ERROR("Wrong joint type!");
-		return false;
-	}
-	return true;
-}
-void Joint::SetType(const JointType& type)
-{
-	if (type != m_jointType)
-	{
-		m_jointType = type;
-		Unlink();
-	}
+void Joint::OnDestroy() {
+  Unlink();
+  rigid_body1.Clear();
+  rigid_body2.Clear();
 }
 
-void Joint::SetMotion(const MotionAxis& axis, const MotionType& type)
-{
-	if (!m_joint)
-		return;
-	if (!TypeCheck(JointType::D6))
-		return;
-	m_motionTypes[static_cast<int>(axis)] = static_cast<PxD6Motion::Enum>(type);
-	static_cast<PxD6Joint*>(m_joint)->setMotion(
-		static_cast<PxD6Axis::Enum>(axis), static_cast<PxD6Motion::Enum>(type));
+bool Joint::TypeCheck(const JointType& type) {
+  if (joint_type_ != type) {
+    EVOENGINE_ERROR("Wrong joint type!");
+    return false;
+  }
+  return true;
 }
-void Joint::SetDrive(const DriveType& type, float stiffness, float damping, const bool& isAcceleration)
-{
-	if (!m_joint)
-		return;
-	if (!TypeCheck(JointType::D6))
-		return;
-	m_drives[static_cast<int>(type)].stiffness = stiffness;
-	m_drives[static_cast<int>(type)].damping = damping;
-	m_drives[static_cast<int>(type)].flags =
-		static_cast<PxD6JointDriveFlag::Enum>(isAcceleration ? PxU32(PxD6JointDriveFlag::eACCELERATION) : 0);
-	static_cast<PxD6Joint*>(m_joint)->setDrive(static_cast<PxD6Drive::Enum>(type), m_drives[static_cast<int>(type)]);
-}
-void Joint::SetDistanceLimit(float extent, float stiffness, float damping)
-{
-	if (!m_joint)
-		return;
-	if (!TypeCheck(JointType::D6))
-		return;
-	const auto spring = PxSpring(stiffness, damping);
-	static_cast<PxD6Joint*>(m_joint)->setDistanceLimit(PxJointLinearLimit(extent, spring));
-}
-void Joint::PostCloneAction(const std::shared_ptr<IPrivateComponent>& target)
-{
-	m_joint = nullptr;
-	m_linked = false;
-}
-void Joint::Relink(const std::unordered_map<Handle, Handle>& map, const std::shared_ptr<Scene>& scene)
-{
-	m_rigidBody1.Relink(map, scene);
-	m_rigidBody2.Relink(map, scene);
+void Joint::SetType(const JointType& type) {
+  if (type != joint_type_) {
+    joint_type_ = type;
+    Unlink();
+  }
 }
 
-void Joint::Serialize(YAML::Emitter& out) const
-{
-	out << YAML::Key << "m_jointType" << YAML::Value << (unsigned)m_jointType;
-	out << YAML::Key << "m_localPosition1" << YAML::Value << m_localPosition1;
-	out << YAML::Key << "m_localPosition2" << YAML::Value << m_localPosition2;
-	out << YAML::Key << "m_localRotation1" << YAML::Value << m_localRotation1;
-	out << YAML::Key << "m_localRotation2" << YAML::Value << m_localRotation2;
-
-	m_rigidBody1.Save("m_rigidBody1", out);
-	m_rigidBody2.Save("m_rigidBody2", out);
-
-
-	switch (m_jointType)
-	{
-	case JointType::Fixed:
-
-		break;
-		/*
-	case JointType::Distance:
-		DistanceGui();
-		break;
-	case JointType::Spherical:
-		SphericalGui();
-		break;
-	case JointType::Revolute:
-		RevoluteGui();
-		break;
-	case JointType::Prismatic:
-		PrismaticGui();
-		break;
-		 */
-	case JointType::D6:
-		out << YAML::Key << "m_motionTypes" << YAML::Value << YAML::BeginSeq;
-		for (int i = 0; i < 6; i++)
-		{
-			out << YAML::BeginMap;
-			out << YAML::Key << "Index" << YAML::Value << i;
-			out << YAML::Key << "MotionType" << YAML::Value << (unsigned)m_motionTypes[i];
-			out << YAML::EndMap;
-		}
-		out << YAML::EndSeq;
-		out << YAML::Key << "m_drives" << YAML::Value << YAML::BeginSeq;
-		for (int i = 0; i < 6; i++)
-		{
-			out << YAML::BeginMap;
-			out << YAML::Key << "Index" << YAML::Value << i;
-			out << YAML::Key << "Stiffness" << YAML::Value << (float)m_drives[i].stiffness;
-			out << YAML::Key << "Damping" << YAML::Value << (float)m_drives[i].damping;
-			out << YAML::Key << "Flags" << YAML::Value << (unsigned)m_drives[i].flags;
-			out << YAML::EndMap;
-		}
-		out << YAML::EndSeq;
-		break;
-	}
+void Joint::SetMotion(const MotionAxis& axis, const MotionType& type) {
+  if (!joint_)
+    return;
+  if (!TypeCheck(JointType::D6))
+    return;
+  motion_types_[static_cast<int>(axis)] = static_cast<PxD6Motion::Enum>(type);
+  static_cast<PxD6Joint*>(joint_)->setMotion(static_cast<PxD6Axis::Enum>(axis), static_cast<PxD6Motion::Enum>(type));
 }
-void Joint::Deserialize(const YAML::Node& in)
-{
-	m_jointType = (JointType)in["m_jointType"].as<unsigned>();
-	m_localPosition1 = in["m_localPosition1"].as<glm::vec3>();
-	m_localPosition2 = in["m_localPosition2"].as<glm::vec3>();
-	m_localRotation1 = in["m_localRotation1"].as<glm::quat>();
-	m_localRotation2 = in["m_localRotation2"].as<glm::quat>();
-
-	m_rigidBody1.Load("m_rigidBody1", in, GetScene());
-	m_rigidBody2.Load("m_rigidBody2", in, GetScene());
-
-	switch (m_jointType)
-	{
-	case JointType::Fixed:
-		break;
-		/*
-	case JointType::Distance:
-		DistanceGui();
-		break;
-	case JointType::Spherical:
-		SphericalGui();
-		break;
-	case JointType::Revolute:
-		RevoluteGui();
-		break;
-	case JointType::Prismatic:
-		PrismaticGui();
-		break;
-		 */
-	case JointType::D6:
-		auto inMotionTypes = in["m_motionTypes"];
-		for (const auto& inMotionType : inMotionTypes)
-		{
-			int index = inMotionType["Index"].as<int>();
-			m_motionTypes[index] = (PxD6Motion::Enum)inMotionType["MotionType"].as<unsigned>();
-		}
-		auto inDrives = in["m_drives"];
-		for (const auto& inDrive : inDrives)
-		{
-			int index = inDrive["Index"].as<int>();
-			m_drives[index].stiffness = inDrive["Stiffness"].as<float>();
-			m_drives[index].damping = inDrive["Damping"].as<float>();
-			m_drives[index].flags = (PxD6JointDriveFlag::Enum)inDrive["Flags"].as<unsigned>();
-		}
-		break;
-	}
-
-	m_linked = false;
-	m_joint = nullptr;
+void Joint::SetDrive(const DriveType& type, float stiffness, float damping, const bool& is_acceleration) {
+  if (!joint_)
+    return;
+  if (!TypeCheck(JointType::D6))
+    return;
+  drives_[static_cast<int>(type)].stiffness = stiffness;
+  drives_[static_cast<int>(type)].damping = damping;
+  drives_[static_cast<int>(type)].flags =
+      static_cast<PxD6JointDriveFlag::Enum>(is_acceleration ? PxU32(PxD6JointDriveFlag::eACCELERATION) : 0);
+  static_cast<PxD6Joint*>(joint_)->setDrive(static_cast<PxD6Drive::Enum>(type), drives_[static_cast<int>(type)]);
 }
-void Joint::Link(const Entity& entity, bool reverse)
-{
-	auto scene = GetScene();
-	const auto owner = GetOwner();
-	if (scene->HasPrivateComponent<RigidBody>(owner) && scene->HasPrivateComponent<RigidBody>(entity))
-	{
-		if (!reverse)
-		{
-			m_rigidBody1.Set(scene->GetOrSetPrivateComponent<RigidBody>(owner).lock());
-			m_rigidBody2.Set(scene->GetOrSetPrivateComponent<RigidBody>(entity).lock());
-		}
-		else {
-			m_rigidBody2.Set(scene->GetOrSetPrivateComponent<RigidBody>(owner).lock());
-			m_rigidBody1.Set(scene->GetOrSetPrivateComponent<RigidBody>(entity).lock());
-		}
-		Unlink();
-	}
+void Joint::SetDistanceLimit(float extent, float stiffness, float damping) {
+  if (!joint_)
+    return;
+  if (!TypeCheck(JointType::D6))
+    return;
+  const auto spring = PxSpring(stiffness, damping);
+  static_cast<PxD6Joint*>(joint_)->setDistanceLimit(PxJointLinearLimit(extent, spring));
+}
+void Joint::PostCloneAction(const std::shared_ptr<IPrivateComponent>& target) {
+  joint_ = nullptr;
+  linked_ = false;
+}
+void Joint::Relink(const std::unordered_map<Handle, Handle>& map, const std::shared_ptr<Scene>& scene) {
+  rigid_body1.Relink(map, scene);
+  rigid_body2.Relink(map, scene);
+}
+
+void Joint::Serialize(YAML::Emitter& out) const {
+  out << YAML::Key << "m_jointType" << YAML::Value << (unsigned)joint_type_;
+  out << YAML::Key << "local_position1_" << YAML::Value << local_position1_;
+  out << YAML::Key << "local_position2_" << YAML::Value << local_position2_;
+  out << YAML::Key << "local_rotation1_" << YAML::Value << local_rotation1_;
+  out << YAML::Key << "local_rotation2_" << YAML::Value << local_rotation2_;
+
+  rigid_body1.Save("rigid_body1", out);
+  rigid_body2.Save("rigid_body2", out);
+
+  switch (joint_type_) {
+    case JointType::Fixed:
+
+      break;
+      /*
+case JointType::Distance:
+      DistanceGui();
+      break;
+case JointType::Spherical:
+      SphericalGui();
+      break;
+case JointType::Revolute:
+      RevoluteGui();
+      break;
+case JointType::Prismatic:
+      PrismaticGui();
+      break;
+       */
+    case JointType::D6:
+      out << YAML::Key << "motion_types_" << YAML::Value << YAML::BeginSeq;
+      for (int i = 0; i < 6; i++) {
+        out << YAML::BeginMap;
+        out << YAML::Key << "Index" << YAML::Value << i;
+        out << YAML::Key << "MotionType" << YAML::Value << (unsigned)motion_types_[i];
+        out << YAML::EndMap;
+      }
+      out << YAML::EndSeq;
+      out << YAML::Key << "drives_" << YAML::Value << YAML::BeginSeq;
+      for (int i = 0; i < 6; i++) {
+        out << YAML::BeginMap;
+        out << YAML::Key << "Index" << YAML::Value << i;
+        out << YAML::Key << "Stiffness" << YAML::Value << (float)drives_[i].stiffness;
+        out << YAML::Key << "Damping" << YAML::Value << (float)drives_[i].damping;
+        out << YAML::Key << "Flags" << YAML::Value << (unsigned)drives_[i].flags;
+        out << YAML::EndMap;
+      }
+      out << YAML::EndSeq;
+      break;
+  }
+}
+void Joint::Deserialize(const YAML::Node& in) {
+  joint_type_ = (JointType)in["m_jointType"].as<unsigned>();
+  local_position1_ = in["local_position1_"].as<glm::vec3>();
+  local_position2_ = in["local_position2_"].as<glm::vec3>();
+  local_rotation1_ = in["local_rotation1_"].as<glm::quat>();
+  local_rotation2_ = in["local_rotation2_"].as<glm::quat>();
+
+  rigid_body1.Load("rigid_body1", in, GetScene());
+  rigid_body2.Load("rigid_body2", in, GetScene());
+
+  switch (joint_type_) {
+    case JointType::Fixed:
+      break;
+      /*
+case JointType::Distance:
+      DistanceGui();
+      break;
+case JointType::Spherical:
+      SphericalGui();
+      break;
+case JointType::Revolute:
+      RevoluteGui();
+      break;
+case JointType::Prismatic:
+      PrismaticGui();
+      break;
+       */
+    case JointType::D6:
+      auto in_motion_types = in["motion_types_"];
+      for (const auto& in_motion_type : in_motion_types) {
+        int index = in_motion_type["Index"].as<int>();
+        motion_types_[index] = (PxD6Motion::Enum)in_motion_type["MotionType"].as<unsigned>();
+      }
+      auto in_drives = in["drives_"];
+      for (const auto& in_drive : in_drives) {
+        int index = in_drive["Index"].as<int>();
+        drives_[index].stiffness = in_drive["Stiffness"].as<float>();
+        drives_[index].damping = in_drive["Damping"].as<float>();
+        drives_[index].flags = (PxD6JointDriveFlag::Enum)in_drive["Flags"].as<unsigned>();
+      }
+      break;
+  }
+
+  linked_ = false;
+  joint_ = nullptr;
+}
+void Joint::Link(const Entity& entity, bool reverse) {
+  auto scene = GetScene();
+  const auto owner = GetOwner();
+  if (scene->HasPrivateComponent<RigidBody>(owner) && scene->HasPrivateComponent<RigidBody>(entity)) {
+    if (!reverse) {
+      rigid_body1.Set(scene->GetOrSetPrivateComponent<RigidBody>(owner).lock());
+      rigid_body2.Set(scene->GetOrSetPrivateComponent<RigidBody>(entity).lock());
+    } else {
+      rigid_body2.Set(scene->GetOrSetPrivateComponent<RigidBody>(owner).lock());
+      rigid_body1.Set(scene->GetOrSetPrivateComponent<RigidBody>(entity).lock());
+    }
+    Unlink();
+  }
 }

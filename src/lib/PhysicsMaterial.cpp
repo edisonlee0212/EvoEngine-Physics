@@ -1,62 +1,52 @@
 #include "PhysicsMaterial.hpp"
 #include "Application.hpp"
 #include "PhysicsLayer.hpp"
-void EvoEngine::PhysicsMaterial::OnCreate()
-{
-    auto physicsLayer = Application::GetLayer<PhysicsLayer>();
-    if(!physicsLayer) return;
-    m_value = physicsLayer->m_physics->createMaterial(m_staticFriction, m_dynamicFriction, m_restitution);
+void evo_engine::PhysicsMaterial::OnCreate() {
+  const auto physics_layer = Application::GetLayer<PhysicsLayer>();
+  if (!physics_layer)
+    return;
+  value_ = physics_layer->physics_->createMaterial(static_friction_, dynamic_friction_, restitution_);
 }
-EvoEngine::PhysicsMaterial::~PhysicsMaterial()
-{
-    if (m_value)
-        m_value->release();
+evo_engine::PhysicsMaterial::~PhysicsMaterial() {
+  if (value_)
+    value_->release();
 }
-void EvoEngine::PhysicsMaterial::SetDynamicFriction(const float &value)
-{
-    m_dynamicFriction = value;
-    m_value->setDynamicFriction(m_dynamicFriction);
-    m_saved = false;
+void evo_engine::PhysicsMaterial::SetDynamicFriction(const float &value) {
+  dynamic_friction_ = value;
+  value_->setDynamicFriction(dynamic_friction_);
+  SetUnsaved();
 }
-void EvoEngine::PhysicsMaterial::SetStaticFriction(const float &value)
-{
-    m_staticFriction = value;
-    m_value->setStaticFriction(m_staticFriction);
-    m_saved = false;
+void evo_engine::PhysicsMaterial::SetStaticFriction(const float &value) {
+  static_friction_ = value;
+  value_->setStaticFriction(static_friction_);
+  SetUnsaved();
 }
-void EvoEngine::PhysicsMaterial::SetRestitution(const float &value)
-{
-    m_restitution = value;
-    m_value->setRestitution(m_restitution);
-    m_saved = false;
+void evo_engine::PhysicsMaterial::SetRestitution(const float &value) {
+  restitution_ = value;
+  value_->setRestitution(restitution_);
+  SetUnsaved();
 }
-void EvoEngine::PhysicsMaterial::OnGui()
-{
-    if (ImGui::DragFloat("Dynamic Friction", &m_dynamicFriction))
-    {
-        SetDynamicFriction(m_dynamicFriction);
-    }
-    if (ImGui::DragFloat("Static Friction", &m_staticFriction))
-    {
-        SetStaticFriction(m_staticFriction);
-    }
-    if (ImGui::DragFloat("Restitution", &m_restitution))
-    {
-        SetRestitution(m_restitution);
-    }
+void evo_engine::PhysicsMaterial::OnGui() {
+  if (ImGui::DragFloat("Dynamic Friction", &dynamic_friction_)) {
+    SetDynamicFriction(dynamic_friction_);
+  }
+  if (ImGui::DragFloat("Static Friction", &static_friction_)) {
+    SetStaticFriction(static_friction_);
+  }
+  if (ImGui::DragFloat("Restitution", &restitution_)) {
+    SetRestitution(restitution_);
+  }
 }
-void EvoEngine::PhysicsMaterial::Serialize(YAML::Emitter &out) const
-{
-    out << YAML::Key << "m_staticFriction" << YAML::Value << m_staticFriction;
-    out << YAML::Key << "m_dynamicFriction" << YAML::Value << m_dynamicFriction;
-    out << YAML::Key << "m_restitution" << YAML::Value << m_restitution;
+void evo_engine::PhysicsMaterial::Serialize(YAML::Emitter &out) const {
+  out << YAML::Key << "static_friction_" << YAML::Value << static_friction_;
+  out << YAML::Key << "dynamic_friction_" << YAML::Value << dynamic_friction_;
+  out << YAML::Key << "restitution_" << YAML::Value << restitution_;
 }
-void EvoEngine::PhysicsMaterial::Deserialize(const YAML::Node &in)
-{
-    m_staticFriction = in["m_staticFriction"].as<float>();
-    m_restitution = in["m_restitution"].as<float>();
-    m_dynamicFriction = in["m_dynamicFriction"].as<float>();
-    SetStaticFriction(m_staticFriction);
-    SetRestitution(m_restitution);
-    SetDynamicFriction(m_dynamicFriction);
+void evo_engine::PhysicsMaterial::Deserialize(const YAML::Node &in) {
+  static_friction_ = in["static_friction_"].as<float>();
+  restitution_ = in["restitution_"].as<float>();
+  dynamic_friction_ = in["dynamic_friction_"].as<float>();
+  SetStaticFriction(static_friction_);
+  SetRestitution(restitution_);
+  SetDynamicFriction(dynamic_friction_);
 }

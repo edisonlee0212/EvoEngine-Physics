@@ -1,470 +1,391 @@
-#include "Application.hpp"
-#include "PhysicsLayer.hpp"
 #include "RigidBody.hpp"
-#include "Transform.hpp"
-#include "Scene.hpp"
+#include "Application.hpp"
 #include "EditorLayer.hpp"
-using namespace EvoEngine;
+#include "PhysicsLayer.hpp"
+#include "Scene.hpp"
+#include "Transform.hpp"
+using namespace evo_engine;
 
-void RigidBody::SetStatic(bool value)
-{
-	if (m_static == value)
-		return;
-	if (value)
-	{
-		SetKinematic(false);
-	}
-	m_static = value;
-	RecreateBody();
-}
-
-void RigidBody::SetShapeTransform(const glm::mat4& value)
-{
-	GlobalTransform ltw;
-	ltw.m_value = value;
-	ltw.SetScale(glm::vec3(1.0f));
-	m_shapeTransform = ltw.m_value;
+void RigidBody::SetStatic(bool value) {
+  if (static_ == value)
+    return;
+  if (value) {
+    SetKinematic(false);
+  }
+  static_ = value;
+  RecreateBody();
 }
 
-void RigidBody::OnDestroy()
-{
-	while (!m_colliders.empty())
-		DetachCollider(0);
-	if (m_rigidActor)
-	{
-		m_rigidActor->release();
-		m_rigidActor = nullptr;
-	}
+void RigidBody::SetShapeTransform(const glm::mat4& value) {
+  GlobalTransform ltw;
+  ltw.value = value;
+  ltw.SetScale(glm::vec3(1.0f));
+  shape_transform_ = ltw.value;
 }
 
-void RigidBody::RecreateBody()
-{
-	const auto physicsLayer = Application::GetLayer<PhysicsLayer>();
-	if (!physicsLayer)
-		return;
-	if (m_rigidActor)
-		m_rigidActor->release();
-	auto scene = GetScene();
-	auto owner = GetOwner();
-	GlobalTransform globalTransform;
-	if (owner.GetIndex() != 0)
-	{
-		globalTransform = scene->GetDataComponent<GlobalTransform>(owner);
-		globalTransform.m_value = globalTransform.m_value * m_shapeTransform;
-		globalTransform.SetScale(glm::vec3(1.0f));
-	}
-	if (m_static)
-		m_rigidActor =
-		physicsLayer->m_physics->createRigidStatic(PxTransform(*static_cast<PxMat44*>(static_cast<void*>(&globalTransform.m_value))));
-	else
-		m_rigidActor =
-		physicsLayer->m_physics->createRigidDynamic(PxTransform(*static_cast<PxMat44*>(static_cast<void*>(&globalTransform.m_value))));
-
-	if (!m_static)
-	{
-		const auto rigidDynamic = static_cast<PxRigidDynamic*>(m_rigidActor);
-		rigidDynamic->setSolverIterationCounts(m_minPositionIterations, m_minVelocityIterations);
-		PxRigidBodyExt::updateMassAndInertia(*rigidDynamic, m_density, &m_massCenter);
-		rigidDynamic->setRigidBodyFlag(PxRigidBodyFlag::eKINEMATIC, m_kinematic);
-		if (!m_kinematic)
-		{
-			rigidDynamic->setLinearDamping(m_linearDamping);
-			rigidDynamic->setAngularDamping(m_angularDamping);
-			rigidDynamic->setLinearVelocity(m_linearVelocity);
-			rigidDynamic->setAngularVelocity(m_angularVelocity);
-			m_rigidActor->setActorFlag(PxActorFlag::eDISABLE_GRAVITY, !m_gravity);
-		}
-	}
-	m_currentRegistered = false;
+void RigidBody::OnDestroy() {
+  while (!colliders_.empty())
+    DetachCollider(0);
+  if (rigid_actor_) {
+    rigid_actor_->release();
+    rigid_actor_ = nullptr;
+  }
 }
 
-void RigidBody::OnCreate()
-{
-	RecreateBody();
+void RigidBody::RecreateBody() {
+  const auto physics_layer = Application::GetLayer<PhysicsLayer>();
+  if (!physics_layer)
+    return;
+  if (rigid_actor_)
+    rigid_actor_->release();
+  auto scene = GetScene();
+  auto owner = GetOwner();
+  GlobalTransform global_transform;
+  if (owner.GetIndex() != 0) {
+    global_transform = scene->GetDataComponent<GlobalTransform>(owner);
+    global_transform.value = global_transform.value * shape_transform_;
+    global_transform.SetScale(glm::vec3(1.0f));
+  }
+  if (static_)
+    rigid_actor_ = physics_layer->physics_->createRigidStatic(
+        PxTransform(*static_cast<PxMat44*>(static_cast<void*>(&global_transform.value))));
+  else
+    rigid_actor_ = physics_layer->physics_->createRigidDynamic(
+        PxTransform(*static_cast<PxMat44*>(static_cast<void*>(&global_transform.value))));
+
+  if (!static_) {
+    const auto rigid_dynamic = static_cast<PxRigidDynamic*>(rigid_actor_);
+    rigid_dynamic->setSolverIterationCounts(min_position_iterations_, min_velocity_iterations_);
+    PxRigidBodyExt::updateMassAndInertia(*rigid_dynamic, density_, &mass_center_);
+    rigid_dynamic->setRigidBodyFlag(PxRigidBodyFlag::eKINEMATIC, kinematic_);
+    if (!kinematic_) {
+      rigid_dynamic->setLinearDamping(linear_damping_);
+      rigid_dynamic->setAngularDamping(angular_damping_);
+      rigid_dynamic->setLinearVelocity(linear_velocity_);
+      rigid_dynamic->setAngularVelocity(angular_velocity_);
+      rigid_actor_->setActorFlag(PxActorFlag::eDISABLE_GRAVITY, !gravity_);
+    }
+  }
+  current_registered_ = false;
 }
 
-bool RigidBody::OnInspect(const std::shared_ptr<EditorLayer>& editorLayer)
-{
-	bool changed = false;
-	if (ImGui::TreeNodeEx("Colliders"))
-	{
-		int index = 0;
-		for (auto& i : m_colliders)
-		{
-			editorLayer->DragAndDropButton<Collider>(i, ("Collider " + std::to_string(index++)));
-		}
-		ImGui::TreePop();
-	}
-
-	ImGui::Checkbox("Draw bounds", &m_drawBounds);
-	static auto displayBoundColor = glm::vec4(0.0f, 1.0f, 0.0f, 0.2f);
-	if (m_drawBounds)
-		ImGui::ColorEdit4("Color:##SkinnedMeshRenderer", (float*)(void*)&displayBoundColor);
-	ImGui::Spacing();
-	ImGui::Separator();
-	ImGui::Spacing();
-	glm::ivec2 iterations = glm::ivec2(m_minPositionIterations, m_minVelocityIterations);
-	if (ImGui::DragInt2("Solver iterations (P/V)", &iterations.x, 1, 0, 128))
-	{
-		SetSolverIterations(iterations.x, iterations.y);
-	}
-	if (!m_static)
-	{
-		const auto rigidDynamic = static_cast<PxRigidDynamic*>(m_rigidActor);
-		if (ImGui::Checkbox("Kinematic", &m_kinematic))
-		{
-			const bool newVal = m_kinematic;
-			m_kinematic = !m_kinematic;
-			SetKinematic(newVal);
-		}
-		if (ImGui::DragFloat("Density", &m_density, 0.1f, 0.001f))
-		{
-			m_density = glm::max(0.001f, m_density);
-			PxRigidBodyExt::updateMassAndInertia(
-				*rigidDynamic, m_density, &m_massCenter);
-		}
-		if (ImGui::DragFloat3("Center", &m_massCenter.x, 0.1f, 0.001f))
-		{
-			PxRigidBodyExt::updateMassAndInertia(
-				*rigidDynamic, m_density, &m_massCenter);
-		}
-		if (!m_kinematic)
-		{
-			if (Application::IsPlaying())
-			{
-				m_linearVelocity = rigidDynamic->getLinearVelocity();
-				m_angularVelocity = rigidDynamic->getAngularVelocity();
-			}
-			if (ImGui::DragFloat3("Linear Velocity", &m_linearVelocity.x, 0.01f))
-			{
-				rigidDynamic->setLinearVelocity(m_linearVelocity);
-			}
-			if (ImGui::DragFloat("Linear Damping", &m_linearDamping, 0.01f))
-			{
-				rigidDynamic->setLinearDamping(m_linearDamping);
-			}
-			if (ImGui::DragFloat3("Angular Velocity", &m_angularVelocity.x, 0.01f))
-			{
-				rigidDynamic->setAngularVelocity(m_angularVelocity);
-			}
-			if (ImGui::DragFloat("Angular Damping", &m_angularDamping, 0.01f))
-			{
-				rigidDynamic->setAngularDamping(m_angularDamping);
-			}
-
-			static auto applyValue = glm::vec3(0.0f);
-			ImGui::DragFloat3("Value", &applyValue.x, 0.01f);
-			if (ImGui::Button("Apply force"))
-			{
-				AddForce(applyValue);
-			}
-			if (ImGui::Button("Apply torque"))
-			{
-				AddForce(applyValue);
-			}
-		}
-	}
-	bool staticChanged = false;
-	bool savedVal = m_static;
-	if (!m_kinematic)
-	{
-		ImGui::Checkbox("Static", &m_static);
-		if (m_static != savedVal)
-		{
-			staticChanged = true;
-		}
-	}
-	{
-		glm::vec3 scale;
-		glm::vec3 trans;
-		glm::quat rotation;
-		glm::vec3 skew;
-		glm::vec4 perspective;
-		glm::decompose(m_shapeTransform, scale, rotation, trans, skew, perspective);
-		skew = glm::degrees(glm::eulerAngles(rotation));
-		bool shapeTransChanged = false;
-		if (ImGui::DragFloat3("Center Position", &trans.x, 0.01f))
-			shapeTransChanged = true;
-		if (ImGui::DragFloat3("Rotation", &skew.x, 0.01f))
-			shapeTransChanged = true;
-		if (shapeTransChanged)
-		{
-			auto newValue =
-				glm::translate(trans) * glm::mat4_cast(glm::quat(glm::radians(skew))) * glm::scale(glm::vec3(1.0f));
-			SetShapeTransform(newValue);
-		}
-		auto scene = GetScene();
-		auto ltw = scene->GetDataComponent<GlobalTransform>(GetOwner());
-		ltw.SetScale(glm::vec3(1.0f));
-		for (auto& collider : m_colliders)
-		{
-
-			switch (collider.Get<Collider>()->m_shapeType)
-			{
-			case ShapeType::Sphere:
-				if (m_drawBounds)
-					editorLayer->DrawGizmoMesh(
-						Resources::GetResource<Mesh>("PRIMITIVE_SPHERE"),
-						displayBoundColor,
-						ltw.m_value *
-						(m_shapeTransform * glm::scale(glm::vec3(collider.Get<Collider>()->m_shapeParam.x))),
-						1);
-				break;
-			case ShapeType::Box:
-				if (m_drawBounds)
-					editorLayer->DrawGizmoMesh(
-						Resources::GetResource<Mesh>("PRIMITIVE_CUBE"),
-						displayBoundColor,
-						ltw.m_value *
-						(m_shapeTransform * glm::scale(glm::vec3(collider.Get<Collider>()->m_shapeParam) * 2.0f)),
-						1);
-				break;
-			case ShapeType::Capsule:
-				if (m_drawBounds)
-					editorLayer->DrawGizmoMesh(
-						Resources::GetResource<Mesh>("PRIMITIVE_CYLINDER"),
-						displayBoundColor,
-						ltw.m_value *
-						(m_shapeTransform * glm::scale(glm::vec3(collider.Get<Collider>()->m_shapeParam))),
-						1);
-				break;
-			}
-		}
-
-		if (staticChanged)
-		{
-			RecreateBody();
-		}
-	}
-	return changed || staticChanged;
-}
-void RigidBody::SetDensityAndMassCenter(float value, const glm::vec3& center)
-{
-	if (m_static)
-	{
-		EVOENGINE_ERROR("RigidBody is static!");
-		return;
-	}
-	m_density = value;
-	m_massCenter = PxVec3(center.x, center.y, center.z);
-	PxRigidBodyExt::updateMassAndInertia(*reinterpret_cast<PxRigidDynamic*>(m_rigidActor), m_density, &m_massCenter);
+void RigidBody::OnCreate() {
+  RecreateBody();
 }
 
-void RigidBody::SetAngularVelocity(const glm::vec3& velocity)
-{
-	if (m_static)
-	{
-		EVOENGINE_ERROR("RigidBody is static!");
-		return;
-	}
-	const auto rigidDynamic = static_cast<PxRigidDynamic*>(m_rigidActor);
-	m_angularVelocity = PxVec3(velocity.x, velocity.y, velocity.z);
-	rigidDynamic->setAngularVelocity(m_angularVelocity);
+bool RigidBody::OnInspect(const std::shared_ptr<EditorLayer>& editor_layer) {
+  bool changed = false;
+  if (ImGui::TreeNodeEx("Colliders")) {
+    int index = 0;
+    for (auto& i : colliders_) {
+      editor_layer->DragAndDropButton<Collider>(i, ("Collider " + std::to_string(index++)));
+    }
+    ImGui::TreePop();
+  }
+
+  ImGui::Checkbox("Draw bounds", &draw_bounds_);
+  static auto display_bound_color = glm::vec4(0.0f, 1.0f, 0.0f, 0.2f);
+  if (draw_bounds_)
+    ImGui::ColorEdit4("Color:##SkinnedMeshRenderer", (float*)(void*)&display_bound_color);
+  ImGui::Spacing();
+  ImGui::Separator();
+  ImGui::Spacing();
+  glm::ivec2 iterations = glm::ivec2(min_position_iterations_, min_velocity_iterations_);
+  if (ImGui::DragInt2("Solver iterations (P/V)", &iterations.x, 1, 0, 128)) {
+    SetSolverIterations(iterations.x, iterations.y);
+  }
+  if (!static_) {
+    const auto rigid_dynamic = static_cast<PxRigidDynamic*>(rigid_actor_);
+    if (ImGui::Checkbox("Kinematic", &kinematic_)) {
+      const bool new_val = kinematic_;
+      kinematic_ = !kinematic_;
+      SetKinematic(new_val);
+    }
+    if (ImGui::DragFloat("Density", &density_, 0.1f, 0.001f)) {
+      density_ = glm::max(0.001f, density_);
+      PxRigidBodyExt::updateMassAndInertia(*rigid_dynamic, density_, &mass_center_);
+    }
+    if (ImGui::DragFloat3("Center", &mass_center_.x, 0.1f, 0.001f)) {
+      PxRigidBodyExt::updateMassAndInertia(*rigid_dynamic, density_, &mass_center_);
+    }
+    if (!kinematic_) {
+      if (Application::IsPlaying()) {
+        linear_velocity_ = rigid_dynamic->getLinearVelocity();
+        angular_velocity_ = rigid_dynamic->getAngularVelocity();
+      }
+      if (ImGui::DragFloat3("Linear Velocity", &linear_velocity_.x, 0.01f)) {
+        rigid_dynamic->setLinearVelocity(linear_velocity_);
+      }
+      if (ImGui::DragFloat("Linear Damping", &linear_damping_, 0.01f)) {
+        rigid_dynamic->setLinearDamping(linear_damping_);
+      }
+      if (ImGui::DragFloat3("Angular Velocity", &angular_velocity_.x, 0.01f)) {
+        rigid_dynamic->setAngularVelocity(angular_velocity_);
+      }
+      if (ImGui::DragFloat("Angular Damping", &angular_damping_, 0.01f)) {
+        rigid_dynamic->setAngularDamping(angular_damping_);
+      }
+
+      static auto apply_value = glm::vec3(0.0f);
+      ImGui::DragFloat3("Value", &apply_value.x, 0.01f);
+      if (ImGui::Button("Apply force")) {
+        AddForce(apply_value);
+      }
+      if (ImGui::Button("Apply torque")) {
+        AddForce(apply_value);
+      }
+    }
+  }
+  bool static_changed = false;
+  const bool saved_val = static_;
+  if (!kinematic_) {
+    ImGui::Checkbox("Static", &static_);
+    if (static_ != saved_val) {
+      static_changed = true;
+    }
+  }
+  {
+    glm::vec3 scale;
+    glm::vec3 trans;
+    glm::quat rotation;
+    glm::vec3 skew;
+    glm::vec4 perspective;
+    glm::decompose(shape_transform_, scale, rotation, trans, skew, perspective);
+    skew = glm::degrees(glm::eulerAngles(rotation));
+    bool shape_trans_changed = false;
+    if (ImGui::DragFloat3("Center Position", &trans.x, 0.01f))
+      shape_trans_changed = true;
+    if (ImGui::DragFloat3("Rotation", &skew.x, 0.01f))
+      shape_trans_changed = true;
+    if (shape_trans_changed) {
+      const auto new_value =
+          glm::translate(trans) * glm::mat4_cast(glm::quat(glm::radians(skew))) * glm::scale(glm::vec3(1.0f));
+      SetShapeTransform(new_value);
+    }
+    auto scene = GetScene();
+    auto ltw = scene->GetDataComponent<GlobalTransform>(GetOwner());
+    ltw.SetScale(glm::vec3(1.0f));
+    for (auto& collider : colliders_) {
+      switch (collider.Get<Collider>()->shape_type_) {
+        case ShapeType::Sphere:
+          if (draw_bounds_)
+            editor_layer->DrawGizmoMesh(
+                Resources::GetResource<Mesh>("PRIMITIVE_SPHERE"), display_bound_color,
+                ltw.value * (shape_transform_ * glm::scale(glm::vec3(collider.Get<Collider>()->shape_param_.x))), 1);
+          break;
+        case ShapeType::Box:
+          if (draw_bounds_)
+            editor_layer->DrawGizmoMesh(
+                Resources::GetResource<Mesh>("PRIMITIVE_CUBE"), display_bound_color,
+                ltw.value * (shape_transform_ * glm::scale(glm::vec3(collider.Get<Collider>()->shape_param_) * 2.0f)),
+                1);
+          break;
+        case ShapeType::Capsule:
+          if (draw_bounds_)
+            editor_layer->DrawGizmoMesh(
+                Resources::GetResource<Mesh>("PRIMITIVE_CYLINDER"), display_bound_color,
+                ltw.value * (shape_transform_ * glm::scale(glm::vec3(collider.Get<Collider>()->shape_param_))), 1);
+          break;
+      }
+    }
+
+    if (static_changed) {
+      RecreateBody();
+    }
+  }
+  return changed || static_changed;
 }
-void RigidBody::SetLinearVelocity(const glm::vec3& velocity)
-{
-	if (m_static)
-	{
-		EVOENGINE_ERROR("RigidBody is static!");
-		return;
-	}
-	const auto rigidDynamic = static_cast<PxRigidDynamic*>(m_rigidActor);
-	m_linearVelocity = PxVec3(velocity.x, velocity.y, velocity.z);
-	rigidDynamic->setLinearVelocity(m_linearVelocity);
+void RigidBody::SetDensityAndMassCenter(float value, const glm::vec3& center) {
+  if (static_) {
+    EVOENGINE_ERROR("RigidBody is static!");
+    return;
+  }
+  density_ = value;
+  mass_center_ = PxVec3(center.x, center.y, center.z);
+  PxRigidBodyExt::updateMassAndInertia(*reinterpret_cast<PxRigidDynamic*>(rigid_actor_), density_, &mass_center_);
 }
 
-bool RigidBody::IsKinematic() const
-{
-	return m_kinematic;
+void RigidBody::SetAngularVelocity(const glm::vec3& velocity) {
+  if (static_) {
+    EVOENGINE_ERROR("RigidBody is static!");
+    return;
+  }
+  const auto rigid_dynamic = static_cast<PxRigidDynamic*>(rigid_actor_);
+  angular_velocity_ = PxVec3(velocity.x, velocity.y, velocity.z);
+  rigid_dynamic->setAngularVelocity(angular_velocity_);
+}
+void RigidBody::SetLinearVelocity(const glm::vec3& velocity) {
+  if (static_) {
+    EVOENGINE_ERROR("RigidBody is static!");
+    return;
+  }
+  const auto rigid_dynamic = static_cast<PxRigidDynamic*>(rigid_actor_);
+  linear_velocity_ = PxVec3(velocity.x, velocity.y, velocity.z);
+  rigid_dynamic->setLinearVelocity(linear_velocity_);
 }
 
-void RigidBody::SetKinematic(bool value)
-{
-	if (m_static)
-	{
-		EVOENGINE_ERROR("RigidBody is static!");
-		return;
-	}
-	m_kinematic = value;
-	static_cast<PxRigidBody*>(m_rigidActor)->setRigidBodyFlag(PxRigidBodyFlag::eKINEMATIC, m_kinematic);
+bool RigidBody::IsKinematic() const {
+  return kinematic_;
 }
-bool RigidBody::IsStatic()
-{
-	return m_static;
-}
-void RigidBody::SetLinearDamping(float value)
-{
-	if (m_static)
-	{
-		EVOENGINE_ERROR("RigidBody is static!");
-		return;
-	}
-	PxRigidDynamic* rigidBody = static_cast<PxRigidDynamic*>(m_rigidActor);
-	m_linearDamping = value;
-	rigidBody->setLinearDamping(m_linearDamping);
-}
-void RigidBody::SetAngularDamping(float value)
-{
-	if (m_static)
-	{
-		EVOENGINE_ERROR("RigidBody is static!");
-		return;
-	}
-	PxRigidDynamic* rigidBody = static_cast<PxRigidDynamic*>(m_rigidActor);
-	m_angularDamping = value;
-	rigidBody->setAngularDamping(m_angularDamping);
-}
-void RigidBody::SetSolverIterations(unsigned position, unsigned velocity)
-{
-	if (m_static)
-	{
-		EVOENGINE_ERROR("RigidBody is static!");
-		return;
-	}
-	PxRigidDynamic* rigidBody = static_cast<PxRigidDynamic*>(m_rigidActor);
-	m_minPositionIterations = position;
-	m_minVelocityIterations = velocity;
-	rigidBody->setSolverIterationCounts(m_minPositionIterations, m_minVelocityIterations);
-}
-void RigidBody::SetEnableGravity(bool value)
-{
-	m_gravity = value;
-	m_rigidActor->setActorFlag(PxActorFlag::eDISABLE_GRAVITY, !value);
-}
-void RigidBody::AttachCollider(std::shared_ptr<Collider>& collider)
-{
-	collider->m_attachCount++;
-	m_colliders.emplace_back(collider);
-	if (m_rigidActor)
-		m_rigidActor->attachShape(*collider->m_shape);
-}
-void RigidBody::DetachCollider(size_t index)
-{
-	if (m_rigidActor)
-		m_rigidActor->detachShape(*m_colliders[index].Get<Collider>()->m_shape);
-	m_colliders[index].Get<Collider>()->m_attachCount--;
-	m_colliders.erase(m_colliders.begin() + index);
-}
-void RigidBody::Serialize(YAML::Emitter& out) const
-{
-	out << YAML::Key << "m_shapeTransform" << YAML::Value << m_shapeTransform;
-	out << YAML::Key << "m_drawBounds" << YAML::Value << m_drawBounds;
-	out << YAML::Key << "m_static" << YAML::Value << m_static;
-	out << YAML::Key << "m_density" << YAML::Value << m_density;
-	out << YAML::Key << "m_massCenter" << YAML::Value << m_massCenter;
-	out << YAML::Key << "m_linearVelocity" << YAML::Value << m_linearVelocity;
-	out << YAML::Key << "m_angularVelocity" << YAML::Value << m_angularVelocity;
-	out << YAML::Key << "m_kinematic" << YAML::Value << m_kinematic;
-	out << YAML::Key << "m_linearDamping" << YAML::Value << m_linearDamping;
-	out << YAML::Key << "m_angularDamping" << YAML::Value << m_angularDamping;
-	out << YAML::Key << "m_minPositionIterations" << YAML::Value << m_minPositionIterations;
-	out << YAML::Key << "m_minVelocityIterations" << YAML::Value << m_minVelocityIterations;
-	out << YAML::Key << "m_gravity" << YAML::Value << m_gravity;
 
-	if (!m_colliders.empty())
-	{
-		out << YAML::Key << "m_colliders" << YAML::Value << YAML::BeginSeq;
-		for (int i = 0; i < m_colliders.size(); i++)
-		{
-			out << YAML::BeginMap;
-			m_colliders[i].Serialize(out);
-			out << YAML::EndMap;
-		}
-		out << YAML::EndSeq;
-	}
+void RigidBody::SetKinematic(bool value) {
+  if (static_) {
+    EVOENGINE_ERROR("RigidBody is static!");
+    return;
+  }
+  kinematic_ = value;
+  static_cast<PxRigidBody*>(rigid_actor_)->setRigidBodyFlag(PxRigidBodyFlag::eKINEMATIC, kinematic_);
 }
-void RigidBody::Deserialize(const YAML::Node& in)
-{
-	m_shapeTransform = in["m_shapeTransform"].as<glm::mat4>();
-	m_drawBounds = in["m_drawBounds"].as<bool>();
-	m_static = in["m_static"].as<bool>();
-	m_density = in["m_density"].as<float>();
-	m_massCenter = in["m_massCenter"].as<PxVec3>();
-	m_linearVelocity = in["m_linearVelocity"].as<PxVec3>();
-	m_angularVelocity = in["m_angularVelocity"].as<PxVec3>();
-	m_kinematic = in["m_kinematic"].as<bool>();
-	m_linearDamping = in["m_linearDamping"].as<float>();
-	m_angularDamping = in["m_angularDamping"].as<float>();
-	m_minPositionIterations = in["m_minPositionIterations"].as<unsigned>();
-	m_minVelocityIterations = in["m_minVelocityIterations"].as<unsigned>();
-	m_gravity = in["m_gravity"].as<bool>();
-	RecreateBody();
-	auto inColliders = in["m_colliders"];
-	if (inColliders)
-	{
-		for (const auto& i : inColliders)
-		{
-			AssetRef ref;
-			ref.Deserialize(i);
-			auto collider = ref.Get<Collider>();
-			AttachCollider(collider);
-		}
-	}
+bool RigidBody::IsStatic() const {
+  return static_;
 }
-void RigidBody::PostCloneAction(const std::shared_ptr<IPrivateComponent>& target)
-{
-	auto ptr = std::static_pointer_cast<RigidBody>(target);
-	m_colliders.clear();
-	m_shapeTransform = ptr->m_shapeTransform;
-	m_drawBounds = ptr->m_drawBounds;
-	m_density = ptr->m_density;
-	m_massCenter = ptr->m_massCenter;
-	m_static = ptr->m_static;
-	m_density = ptr->m_density;
-	m_massCenter = ptr->m_massCenter;
-	m_linearVelocity = ptr->m_linearVelocity;
-	m_angularVelocity = ptr->m_angularVelocity;
-	m_kinematic = ptr->m_kinematic;
-	m_linearDamping = ptr->m_linearDamping;
-	m_angularDamping = ptr->m_angularDamping;
-	m_minPositionIterations = ptr->m_minPositionIterations;
-	m_minVelocityIterations = ptr->m_minVelocityIterations;
-	m_gravity = ptr->m_gravity;
-	RecreateBody();
-	for (auto& i : ptr->m_colliders)
-	{
-		auto collider = i.Get<Collider>();
-		AttachCollider(collider);
-	}
+void RigidBody::SetLinearDamping(float value) {
+  if (static_) {
+    EVOENGINE_ERROR("RigidBody is static!");
+    return;
+  }
+  PxRigidDynamic* rigid_body = static_cast<PxRigidDynamic*>(rigid_actor_);
+  linear_damping_ = value;
+  rigid_body->setLinearDamping(linear_damping_);
 }
-void RigidBody::CollectAssetRef(std::vector<AssetRef>& list)
-{
-	for (const auto& i : m_colliders)
-		list.push_back(i);
+void RigidBody::SetAngularDamping(float value) {
+  if (static_) {
+    EVOENGINE_ERROR("RigidBody is static!");
+    return;
+  }
+  PxRigidDynamic* rigid_body = static_cast<PxRigidDynamic*>(rigid_actor_);
+  angular_damping_ = value;
+  rigid_body->setAngularDamping(angular_damping_);
 }
-bool RigidBody::Registered() const
-{
-	return m_currentRegistered;
+void RigidBody::SetSolverIterations(unsigned position, unsigned velocity) {
+  if (static_) {
+    EVOENGINE_ERROR("RigidBody is static!");
+    return;
+  }
+  PxRigidDynamic* rigid_body = static_cast<PxRigidDynamic*>(rigid_actor_);
+  min_position_iterations_ = position;
+  min_velocity_iterations_ = velocity;
+  rigid_body->setSolverIterationCounts(min_position_iterations_, min_velocity_iterations_);
 }
-void RigidBody::AddForce(const glm::vec3& force)
-{
-	if (m_static)
-	{
-		EVOENGINE_ERROR("RigidBody is static!");
-		return;
-	}
-	if (m_kinematic)
-	{
-		EVOENGINE_ERROR("RigidBody is kinematic!");
-		return;
-	}
-	auto* rigidBody = static_cast<PxRigidBody*>(m_rigidActor);
-	auto pxForce = PxVec3(force.x, force.y, force.z);
-	rigidBody->addForce(pxForce, PxForceMode::eFORCE);
+void RigidBody::SetEnableGravity(bool value) {
+  gravity_ = value;
+  rigid_actor_->setActorFlag(PxActorFlag::eDISABLE_GRAVITY, !value);
 }
-void RigidBody::AddTorque(const glm::vec3& torque)
-{
-	if (m_static)
-	{
-		EVOENGINE_ERROR("RigidBody is static!");
-		return;
-	}
-	if (m_kinematic)
-	{
-		EVOENGINE_ERROR("RigidBody is kinematic!");
-		return;
-	}
-	auto* rigidBody = static_cast<PxRigidBody*>(m_rigidActor);
-	auto pxTorque = PxVec3(torque.x, torque.y, torque.z);
-	rigidBody->addTorque(pxTorque, PxForceMode::eFORCE);
+void RigidBody::AttachCollider(std::shared_ptr<Collider>& collider) {
+  collider->attach_count_++;
+  colliders_.emplace_back(collider);
+  if (rigid_actor_)
+    rigid_actor_->attachShape(*collider->shape_);
+}
+void RigidBody::DetachCollider(size_t index) {
+  if (rigid_actor_)
+    rigid_actor_->detachShape(*colliders_[index].Get<Collider>()->shape_);
+  colliders_[index].Get<Collider>()->attach_count_--;
+  colliders_.erase(colliders_.begin() + index);
+}
+void RigidBody::Serialize(YAML::Emitter& out) const {
+  out << YAML::Key << "shape_transform_" << YAML::Value << shape_transform_;
+  out << YAML::Key << "draw_bounds_" << YAML::Value << draw_bounds_;
+  out << YAML::Key << "static_" << YAML::Value << static_;
+  out << YAML::Key << "density_" << YAML::Value << density_;
+  out << YAML::Key << "mass_center_" << YAML::Value << mass_center_;
+  out << YAML::Key << "linear_velocity_" << YAML::Value << linear_velocity_;
+  out << YAML::Key << "angular_velocity_" << YAML::Value << angular_velocity_;
+  out << YAML::Key << "kinematic_" << YAML::Value << kinematic_;
+  out << YAML::Key << "linear_damping_" << YAML::Value << linear_damping_;
+  out << YAML::Key << "angular_damping_" << YAML::Value << angular_damping_;
+  out << YAML::Key << "min_position_iterations_" << YAML::Value << min_position_iterations_;
+  out << YAML::Key << "min_velocity_iterations_" << YAML::Value << min_velocity_iterations_;
+  out << YAML::Key << "gravity_" << YAML::Value << gravity_;
+
+  if (!colliders_.empty()) {
+    out << YAML::Key << "colliders_" << YAML::Value << YAML::BeginSeq;
+    for (int i = 0; i < colliders_.size(); i++) {
+      out << YAML::BeginMap;
+      colliders_[i].Serialize(out);
+      out << YAML::EndMap;
+    }
+    out << YAML::EndSeq;
+  }
+}
+void RigidBody::Deserialize(const YAML::Node& in) {
+  shape_transform_ = in["shape_transform_"].as<glm::mat4>();
+  draw_bounds_ = in["draw_bounds_"].as<bool>();
+  static_ = in["static_"].as<bool>();
+  density_ = in["density_"].as<float>();
+  mass_center_ = in["mass_center_"].as<PxVec3>();
+  linear_velocity_ = in["linear_velocity_"].as<PxVec3>();
+  angular_velocity_ = in["angular_velocity_"].as<PxVec3>();
+  kinematic_ = in["kinematic_"].as<bool>();
+  linear_damping_ = in["linear_damping_"].as<float>();
+  angular_damping_ = in["angular_damping_"].as<float>();
+  min_position_iterations_ = in["min_position_iterations_"].as<unsigned>();
+  min_velocity_iterations_ = in["min_velocity_iterations_"].as<unsigned>();
+  gravity_ = in["gravity_"].as<bool>();
+  RecreateBody();
+  if (auto in_colliders = in["colliders_"]) {
+    for (const auto& i : in_colliders) {
+      AssetRef ref;
+      ref.Deserialize(i);
+      auto collider = ref.Get<Collider>();
+      AttachCollider(collider);
+    }
+  }
+}
+void RigidBody::PostCloneAction(const std::shared_ptr<IPrivateComponent>& target) {
+  auto ptr = std::static_pointer_cast<RigidBody>(target);
+  colliders_.clear();
+  shape_transform_ = ptr->shape_transform_;
+  draw_bounds_ = ptr->draw_bounds_;
+  density_ = ptr->density_;
+  mass_center_ = ptr->mass_center_;
+  static_ = ptr->static_;
+  density_ = ptr->density_;
+  mass_center_ = ptr->mass_center_;
+  linear_velocity_ = ptr->linear_velocity_;
+  angular_velocity_ = ptr->angular_velocity_;
+  kinematic_ = ptr->kinematic_;
+  linear_damping_ = ptr->linear_damping_;
+  angular_damping_ = ptr->angular_damping_;
+  min_position_iterations_ = ptr->min_position_iterations_;
+  min_velocity_iterations_ = ptr->min_velocity_iterations_;
+  gravity_ = ptr->gravity_;
+  RecreateBody();
+  for (auto& i : ptr->colliders_) {
+    auto collider = i.Get<Collider>();
+    AttachCollider(collider);
+  }
+}
+void RigidBody::CollectAssetRef(std::vector<AssetRef>& list) {
+  for (const auto& i : colliders_)
+    list.push_back(i);
+}
+bool RigidBody::Registered() const {
+  return current_registered_;
+}
+void RigidBody::AddForce(const glm::vec3& force) const {
+  if (static_) {
+    EVOENGINE_ERROR("RigidBody is static!");
+    return;
+  }
+  if (kinematic_) {
+    EVOENGINE_ERROR("RigidBody is kinematic!");
+    return;
+  }
+  auto* rigid_body = static_cast<PxRigidBody*>(rigid_actor_);
+  const auto px_force = PxVec3(force.x, force.y, force.z);
+  rigid_body->addForce(px_force, PxForceMode::eFORCE);
+}
+void RigidBody::AddTorque(const glm::vec3& torque) const {
+  if (static_) {
+    EVOENGINE_ERROR("RigidBody is static!");
+    return;
+  }
+  if (kinematic_) {
+    EVOENGINE_ERROR("RigidBody is kinematic!");
+    return;
+  }
+  auto* rigid_body = static_cast<PxRigidBody*>(rigid_actor_);
+  const auto px_torque = PxVec3(torque.x, torque.y, torque.z);
+  rigid_body->addTorque(px_torque, PxForceMode::eFORCE);
 }
